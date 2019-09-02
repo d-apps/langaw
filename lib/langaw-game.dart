@@ -4,7 +4,15 @@ import 'dart:ui';
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/gestures.dart';
+
+import 'package:langaw/components/backyard.dart';
 import 'package:langaw/components/fly.dart';
+import 'package:langaw/components/house-fly.dart';
+
+import 'package:langaw/components/agile-fly.dart';
+import 'package:langaw/components/drooler-fly.dart';
+import 'package:langaw/components/hungry-fly.dart';
+import 'package:langaw/components/macho-fly.dart';
 
 class LangawGame extends Game {
 
@@ -12,6 +20,8 @@ class LangawGame extends Game {
   double tileSize;
   List<Fly> flies;
   Random rnd;
+
+  Backyard backyard;
 
   // Necessário criar o inicialiador para receber o tamanho da tela
   LangawGame(){
@@ -31,31 +41,58 @@ class LangawGame extends Game {
     // Porém precisa recalcular o tileSize
     resize(await Flame.util.initialDimensions());
 
+    //Inicializa o background
+    backyard = Backyard(this);
+
+    // Começa mostrar as moscas
     spawnFly();
   }
 
   void spawnFly(){
 
     // Gera um numero randomico e multipica pelo valor resultado do valor da
-    // do tamanho da alutura/largura menos o tileSize
-    double x = rnd.nextDouble() * (screenSize.width - tileSize);
-    double y = rnd.nextDouble() * (screenSize.height - tileSize);
+    // do tamanho da altura/largura menos o tileSize
+    double x = rnd.nextDouble() * (screenSize.width - (tileSize * 2.025));
+    double y = rnd.nextDouble() * (screenSize.height - (tileSize * 2.025));
 
     print("RANDOM ${rnd.nextDouble()}");
 
-    flies.add(Fly(this, x, y));
+    //flies.add(HouseFly(this, x, y));
+
+    switch (rnd.nextInt(5)) {
+      case 0:
+        flies.add(HouseFly(this, x, y));
+        break;
+      case 1:
+        flies.add(DroolerFly(this, x, y));
+        break;
+      case 2:
+        flies.add(AgileFly(this, x, y));
+        break;
+      case 3:
+        flies.add(MachoFly(this, x, y));
+        break;
+      case 4:
+        flies.add(HungryFly(this, x, y));
+        break;
+    }
 
   }
 
   void render(Canvas canvas) {
 
     // Background
+    /*
     Rect bgRect = Rect.fromLTWH(0, 0, screenSize.width, screenSize.height);
     Paint bgPaint = Paint();
     bgPaint.color = Color(0xff576574);
     canvas.drawRect(bgRect, bgPaint);
+    */
 
-    //
+    // Mostra o background
+    backyard.render(canvas);
+
+    // Verifica se a mosca está morta, se não ela fica voando
     flies.forEach((Fly fly) => fly.render(canvas));
 
   }

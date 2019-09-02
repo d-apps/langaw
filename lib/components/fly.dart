@@ -1,37 +1,45 @@
 
+import 'package:flame/sprite.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:langaw/langaw-game.dart';
 
 class Fly {
 
-  // Cria um objeto retangulo que simboliza a mosca
   Rect flyRect;
+  List<Sprite> flyingSprite;
+  Sprite deadSprite;
+  double flyingSpriteIndex = 0;
+
+  double get speed => game.tileSize * 3;
+  Offset targetLocation;
+
   // Cria um objeto do tipo game
   final LangawGame game;
-  Paint flyPaint;
   bool isDead = false;
   bool isOffScreen = false;
 
   // Construtor do Fly recebe o jogo, largura e altura
-  Fly(this.game, double x, double y){
-   flyRect = Rect.fromLTWH(x, y, game.tileSize, game.tileSize);
-
-   // Pintura para o quadrado (retangulo)
-   flyPaint = Paint();
-   flyPaint.color = Color(0xff6ab04c);
-
+  Fly(this.game){
+   setTargetLocation();
   }
 
   void render(Canvas c){
 
-    c.drawRect(flyRect, flyPaint);
+    if(isDead){
+
+      deadSprite.renderRect(c, flyRect.inflate(2));
+
+    } else {
+      flyingSprite[flyingSpriteIndex.toInt()].renderRect(c, flyRect.inflate(2));
+    }
+
 
   }
 
   void update(double t){
 
     // Checa se é a mosca morreu
-
+    // Make the fly fall
     if(isDead){
 
       // Se morreu, criamos um novo Rect e seta no FlyRect
@@ -48,6 +56,27 @@ class Fly {
         isOffScreen = true;
       }
 
+    } else {
+
+      // Clap the wings
+      flyingSpriteIndex += 30 * t;
+      if (flyingSpriteIndex >= 2) {
+        flyingSpriteIndex -= 2;
+      }
+
+    }
+
+    double stepDistance = speed * t;
+    Offset toTarget = targetLocation - Offset(flyRect.left, flyRect.top);
+
+    if(stepDistance < toTarget.distance){
+
+      Offset stepToTarget = Offset.fromDirection(toTarget.distance, stepDistance);
+      flyRect = flyRect.shift(stepToTarget);
+
+    } else {
+      flyRect = flyRect.shift(toTarget);
+      setTargetLocation();
     }
 
   }
@@ -56,12 +85,17 @@ class Fly {
 
     isDead = true;
 
-    // Passa uma cor vermelha ao fly
-    flyPaint.color = Color(0xffff4757);
-
     // Spawn mais moscas
     game.spawnFly();
 
+
+  }
+
+  void setTargetLocation(){
+
+    double x = game.rnd.nextDouble() * (game.screenSize.width - (game.tileSize * 2.025));
+    double y = game.rnd.nextDouble() * (game.screenSize.height - (game.tileSize * 2.025));
+    targetLocation = Offset(x, y);
 
   }
 
