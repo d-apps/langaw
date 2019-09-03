@@ -28,7 +28,7 @@ class Backyard {
        0, // X - Left - Começa no zero para tomar toda largura
        game.screenSize.height - (game.tileSize * 23), // Y - Top -
        game.tileSize * 9, // Width -
-       game.tileSize * 23 // Height -
+       game.tileSize * 23, // Height -
    );
 
   }

@@ -6,22 +6,28 @@ import 'package:langaw/langaw-game.dart';
 
 class Fly {
 
-  Rect flyRect;
+  final LangawGame game;
   List<Sprite> flyingSprite;
   Sprite deadSprite;
   double flyingSpriteIndex = 0;
-
-  double get speed => game.tileSize * 3;
-  Offset targetLocation;
-
-  // Cria um objeto do tipo game
-  final LangawGame game;
+  Rect flyRect;
   bool isDead = false;
   bool isOffScreen = false;
+  Offset targetLocation;
+
+  double get speed => game.tileSize * 3;
 
   // Construtor do Fly recebe o jogo, largura e altura
   Fly(this.game){
    setTargetLocation();
+  }
+
+  void setTargetLocation(){
+
+    double x = game.rnd.nextDouble() * (game.screenSize.width - (game.tileSize * 2.025));
+    double y = game.rnd.nextDouble() * (game.screenSize.height - (game.tileSize * 2.025));
+    targetLocation = Offset(x, y);
+
   }
 
   void render(Canvas c){
@@ -67,12 +73,13 @@ class Fly {
 
     }
 
+    // Mover a mosca
     double stepDistance = speed * t;
     Offset toTarget = targetLocation - Offset(flyRect.left, flyRect.top);
 
     if(stepDistance < toTarget.distance){
 
-      Offset stepToTarget = Offset.fromDirection(toTarget.distance, stepDistance);
+      Offset stepToTarget = Offset.fromDirection(toTarget.direction, stepDistance);
       flyRect = flyRect.shift(stepToTarget);
 
     } else {
@@ -85,18 +92,6 @@ class Fly {
   void onTapDown() {
 
     isDead = true;
-
-
-
-
-  }
-
-  void setTargetLocation(){
-
-    double x = game.rnd.nextDouble() * (game.screenSize.width - (game.tileSize * 2.025));
-    double y = game.rnd.nextDouble() * (game.screenSize.height - (game.tileSize * 2.025));
-    targetLocation = Offset(x, y);
-
   }
 
 }

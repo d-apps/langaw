@@ -217,7 +217,7 @@ class LangawGame extends Game {
           }
         }
 
-    // CHECA SE TOCOU NA MOSCA
+    // MOSCAS
     if (!isHandled){
 
       bool didHitAFly = false;
