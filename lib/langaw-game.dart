@@ -14,6 +14,21 @@ import 'package:langaw/components/drooler-fly.dart';
 import 'package:langaw/components/hungry-fly.dart';
 import 'package:langaw/components/macho-fly.dart';
 
+import 'package:langaw/view.dart';
+import 'package:langaw/views/home-view.dart';
+
+import 'package:langaw/components/start-button.dart';
+import 'package:langaw/views/lost-view.dart';
+
+import 'package:langaw/controllers/spawner.dart';
+
+import 'package:langaw/components/credits-button.dart';
+import 'package:langaw/components/help-button.dart';
+
+import 'package:langaw/views/help-view.dart';
+import 'package:langaw/views/credits-view.dart';
+
+
 class LangawGame extends Game {
 
   Size screenSize;
@@ -22,6 +37,18 @@ class LangawGame extends Game {
   Random rnd;
 
   Backyard backyard;
+
+  View activeView = View.home;
+  HomeView homeView;
+  StartButton startButton;
+  LostView lostView;
+  HelpView helpView;
+  CreditsView creditsView;
+
+  FlySpawner spawner;
+
+  HelpButton helpButton;
+  CreditsButton creditsButton;
 
   // Necessário criar o inicialiador para receber o tamanho da tela
   LangawGame(){
@@ -41,11 +68,20 @@ class LangawGame extends Game {
     // Porém precisa recalcular o tileSize
     resize(await Flame.util.initialDimensions());
 
+
     //Inicializa o background
     backyard = Backyard(this);
 
-    // Começa mostrar as moscas
-    spawnFly();
+    // Inicializa depois do metodo resize para sabermos o tamanho da tela
+    homeView = HomeView(this);
+    startButton = StartButton(this);
+    lostView = LostView(this);
+    spawner = FlySpawner(this);
+    helpButton = HelpButton(this);
+    creditsButton = CreditsButton(this);
+    helpView = HelpView(this);
+    creditsView = CreditsView(this);
+
   }
 
   void spawnFly(){
@@ -89,11 +125,30 @@ class LangawGame extends Game {
     canvas.drawRect(bgRect, bgPaint);
     */
 
-    // Mostra o background
+    // 1 - Mostra o background
     backyard.render(canvas);
 
-    // Verifica se a mosca está morta, se não ela fica voando
+    // 2 - Verifica se a mosca está morta, se não ela fica voando
     flies.forEach((Fly fly) => fly.render(canvas));
+
+    // 3-  Renderiza a home por último
+    // Checamos sse o enum da view é do tipo home, se for mostra o título em cima
+    // de tudo.
+    if (activeView == View.home) homeView.render(canvas);
+
+    // Se o activeView for igual home ou lost, mostra o botão também
+    if(activeView == View.home || activeView == View.lost) {
+
+      // Se a view está na home ou na perdeu:
+      startButton.render(canvas);
+      helpButton.render(canvas);
+      creditsButton.render(canvas);
+    }
+
+    if (activeView == View.lost) lostView.render(canvas);
+
+    if (activeView == View.help) helpView.render(canvas);
+    if (activeView == View.credits) creditsView.render(canvas);
 
   }
 
@@ -104,6 +159,9 @@ class LangawGame extends Game {
 
     // Remove a mosca que está fora da tela
     flies.removeWhere((Fly fly) => fly.isOffScreen);
+
+    // Controlador que spawna as moscas
+    spawner.update(t);
 
   }
 
@@ -124,19 +182,66 @@ class LangawGame extends Game {
 
   void onTapDown(TapDownDetails d){
 
-    flies.forEach((Fly fly){
+    bool isHandled = false;
 
-      // Se o flyRect do fly (posição chamada) possui o offset, tocou dentro do
-      // Rect, chama o tap da class
+        // dialog boxes
+        if (!isHandled) {
+          if (activeView == View.help || activeView == View.credits) {
+            activeView = View.home;
+            isHandled = true;
+          }
+        }
 
-      if(fly.flyRect.contains(d.globalPosition)){
 
-        // Chama o tap da classe Fly
-        fly.onTapDown();
+        // help button
+        if (!isHandled && helpButton.rect.contains(d.globalPosition)) {
+          if (activeView == View.home || activeView == View.lost) {
+            helpButton.onTapDown();
+            isHandled = true;
+          }
+        }
 
+        // credits button
+        if (!isHandled && creditsButton.rect.contains(d.globalPosition)) {
+          if (activeView == View.home || activeView == View.lost) {
+            creditsButton.onTapDown();
+            isHandled = true;
+          }
+        }
+
+        // START BUTTON
+        if(!isHandled && startButton.rect.contains(d.globalPosition)){
+          if(activeView == View.home || activeView == View.lost){
+            startButton.onTapDown();
+            isHandled = true;
+          }
+        }
+
+    // CHECA SE TOCOU NA MOSCA
+    if (!isHandled){
+
+      bool didHitAFly = false;
+      flies.forEach((Fly fly){
+
+        // Se o flyRect do fly (posição chamada) possui o offset, tocou dentro do
+        // Rect, chama o tap da class
+        if(fly.flyRect.contains(d.globalPosition)){
+
+          // Chama o tap da classe Fly
+          fly.onTapDown();
+          isHandled = true;
+          didHitAFly = true;
+
+        }
+
+      });
+
+      // Checa se perdeu, se sim muda a active view para status lost
+      if (activeView == View.playing && !didHitAFly) {
+        activeView = View.lost;
       }
 
-    });
+    }
 
   }
 

@@ -6,7 +6,7 @@ import 'dart:ui';
 
 class AgileFly extends Fly {
 
-  double get speed => game.tileSize * 5;
+  double get speed => game.tileSize * 4;
 
   AgileFly(LangawGame game, double x, double y) : super(game) {
 

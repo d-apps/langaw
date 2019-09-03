@@ -3,6 +3,7 @@ import 'package:flame/sprite.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:langaw/langaw-game.dart';
 
+
 class Fly {
 
   Rect flyRect;
@@ -85,8 +86,7 @@ class Fly {
 
     isDead = true;
 
-    // Spawn mais moscas
-    game.spawnFly();
+
 
 
   }
