@@ -91,8 +91,6 @@ class LangawGame extends Game {
     double x = rnd.nextDouble() * (screenSize.width - (tileSize * 2.025));
     double y = rnd.nextDouble() * (screenSize.height - (tileSize * 2.025));
 
-    print("RANDOM ${rnd.nextDouble()}");
-
     //flies.add(HouseFly(this, x, y));
 
     switch (rnd.nextInt(5)) {
@@ -135,6 +133,7 @@ class LangawGame extends Game {
     // Checamos sse o enum da view é do tipo home, se for mostra o título em cima
     // de tudo.
     if (activeView == View.home) homeView.render(canvas);
+    if (activeView == View.lost) lostView.render(canvas);
 
     // Se o activeView for igual home ou lost, mostra o botão também
     if(activeView == View.home || activeView == View.lost) {
@@ -145,8 +144,6 @@ class LangawGame extends Game {
       creditsButton.render(canvas);
     }
 
-    if (activeView == View.lost) lostView.render(canvas);
-
     if (activeView == View.help) helpView.render(canvas);
     if (activeView == View.credits) creditsView.render(canvas);
 
@@ -154,14 +151,14 @@ class LangawGame extends Game {
 
   void update(double t) {
 
+    // Controlador que spawna as moscas
+    spawner.update(t);
+
     // Atualiza a mosca
     flies.forEach((Fly fly) => fly.update(t));
 
     // Remove a mosca que está fora da tela
     flies.removeWhere((Fly fly) => fly.isOffScreen);
-
-    // Controlador que spawna as moscas
-    spawner.update(t);
 
   }
 
@@ -174,7 +171,7 @@ class LangawGame extends Game {
     //Largura divido por 9, signfica que cabem ate 9 moscas na tela, left to the right
     tileSize = screenSize.width / 9;
 
-    print("TILESIZE: $tileSize");
+    //print("TILESIZE: $tileSize");
 
     super.resize(size);
 
@@ -184,65 +181,58 @@ class LangawGame extends Game {
 
     bool isHandled = false;
 
-        // dialog boxes
-        if (!isHandled) {
-          if (activeView == View.help || activeView == View.credits) {
-            activeView = View.home;
-            isHandled = true;
-          }
-        }
+    // dialog boxes
+    if (!isHandled) {
+      if (activeView == View.help || activeView == View.credits) {
+        activeView = View.home;
+        isHandled = true;
+      }
+    }
 
+    // help button
+    if (!isHandled && helpButton.rect.contains(d.globalPosition)) {
+      if (activeView == View.home || activeView == View.lost) {
+        helpButton.onTapDown();
+        isHandled = true;
+      }
+    }
 
-        // help button
-        if (!isHandled && helpButton.rect.contains(d.globalPosition)) {
-          if (activeView == View.home || activeView == View.lost) {
-            helpButton.onTapDown();
-            isHandled = true;
-          }
-        }
+    // credits button
+    if (!isHandled && creditsButton.rect.contains(d.globalPosition)) {
+      if (activeView == View.home || activeView == View.lost) {
+        creditsButton.onTapDown();
+        isHandled = true;
+      }
+    }
 
-        // credits button
-        if (!isHandled && creditsButton.rect.contains(d.globalPosition)) {
-          if (activeView == View.home || activeView == View.lost) {
-            creditsButton.onTapDown();
-            isHandled = true;
-          }
-        }
+    // start button
+    if (!isHandled && startButton.rect.contains(d.globalPosition)) {
+      if (activeView == View.home || activeView == View.lost) {
+        startButton.onTapDown();
+        isHandled = true;
+      }
+    }
 
-        // START BUTTON
-        if(!isHandled && startButton.rect.contains(d.globalPosition)){
-          if(activeView == View.home || activeView == View.lost){
-            startButton.onTapDown();
-            isHandled = true;
-          }
-        }
-
-    // MOSCAS
-    if (!isHandled){
-
+    // flies
+    if (!isHandled) {
       bool didHitAFly = false;
-      flies.forEach((Fly fly){
+      flies.forEach((Fly fly) {
 
         // Se o flyRect do fly (posição chamada) possui o offset, tocou dentro do
         // Rect, chama o tap da class
-        if(fly.flyRect.contains(d.globalPosition)){
+        if (fly.flyRect.contains(d.globalPosition)) {
 
           // Chama o tap da classe Fly
           fly.onTapDown();
           isHandled = true;
           didHitAFly = true;
-
         }
-
       });
-
       // Checa se perdeu, se sim muda a active view para status lost
       if (activeView == View.playing && !didHitAFly) {
         activeView = View.lost;
       }
-
     }
-
   }
 
 }
