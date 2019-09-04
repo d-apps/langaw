@@ -13,6 +13,7 @@ import 'package:langaw/components/agile-fly.dart';
 import 'package:langaw/components/drooler-fly.dart';
 import 'package:langaw/components/hungry-fly.dart';
 import 'package:langaw/components/macho-fly.dart';
+import 'package:langaw/components/score-display.dart';
 
 import 'package:langaw/view.dart';
 import 'package:langaw/views/home-view.dart';
@@ -28,6 +29,8 @@ import 'package:langaw/components/help-button.dart';
 import 'package:langaw/views/help-view.dart';
 import 'package:langaw/views/credits-view.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:langaw/components/highscore-display.dart';
 
 class LangawGame extends Game {
 
@@ -50,8 +53,13 @@ class LangawGame extends Game {
   HelpButton helpButton;
   CreditsButton creditsButton;
 
+  int score;
+  ScoreDisplay scoreDisplay;
+  final SharedPreferences storage;
+  HighscoreDisplay highscoreDisplay;
+
   // Necessário criar o inicialiador para receber o tamanho da tela
-  LangawGame(){
+  LangawGame(this.storage){
     initialize();
   }
 
@@ -62,6 +70,8 @@ class LangawGame extends Game {
 
     // Inializa o random
     rnd = Random();
+
+    score = 0;
 
     // Aqui o método initialDimensions é um Future<Size> que espera até receber o tamanho.
     // Após termos o valor ele seta o valor diretamente no objeto screenSize, porém
@@ -81,7 +91,8 @@ class LangawGame extends Game {
     creditsButton = CreditsButton(this);
     helpView = HelpView(this);
     creditsView = CreditsView(this);
-
+    scoreDisplay = ScoreDisplay(this);
+    highscoreDisplay = HighscoreDisplay(this);
   }
 
   void spawnFly(){
@@ -123,31 +134,23 @@ class LangawGame extends Game {
     canvas.drawRect(bgRect, bgPaint);
     */
 
-    // 1 - Mostra o background
     backyard.render(canvas);
 
-    // 2 - Verifica se a mosca está morta, se não ela fica voando
-    flies.forEach((Fly fly) => fly.render(canvas));
+      highscoreDisplay.render(canvas);
+      if (activeView == View.playing || activeView == View.lost) scoreDisplay.render(canvas);
 
-    // 3-  Renderiza a home por último
-    // Checamos sse o enum da view é do tipo home, se for mostra o título em cima
-    // de tudo.
-    if (activeView == View.home) homeView.render(canvas);
-    if (activeView == View.lost) lostView.render(canvas);
+      flies.forEach((Fly fly) => fly.render(canvas));
 
-    // Se o activeView for igual home ou lost, mostra o botão também
-    if(activeView == View.home || activeView == View.lost) {
-
-      // Se a view está na home ou na perdeu:
-      startButton.render(canvas);
-      helpButton.render(canvas);
-      creditsButton.render(canvas);
+      if (activeView == View.home) homeView.render(canvas);
+      if (activeView == View.lost) lostView.render(canvas);
+      if (activeView == View.home || activeView == View.lost) {
+        startButton.render(canvas);
+        helpButton.render(canvas);
+        creditsButton.render(canvas);
+      }
+      if (activeView == View.help) helpView.render(canvas);
+      if (activeView == View.credits) creditsView.render(canvas);
     }
-
-    if (activeView == View.help) helpView.render(canvas);
-    if (activeView == View.credits) creditsView.render(canvas);
-
-  }
 
   void update(double t) {
 
@@ -159,6 +162,8 @@ class LangawGame extends Game {
 
     // Remove a mosca que está fora da tela
     flies.removeWhere((Fly fly) => fly.isOffScreen);
+
+    if (activeView == View.playing) scoreDisplay.update(t);
 
   }
 

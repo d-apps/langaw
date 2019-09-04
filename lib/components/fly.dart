@@ -2,6 +2,8 @@
 import 'package:flame/sprite.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:langaw/langaw-game.dart';
+import 'package:langaw/view.dart';
+import 'package:langaw/components/callout.dart';
 
 
 class Fly {
@@ -14,12 +16,15 @@ class Fly {
   bool isDead = false;
   bool isOffScreen = false;
   Offset targetLocation;
+  Callout callout;
 
   double get speed => game.tileSize * 3;
 
   // Construtor do Fly recebe o jogo, largura e altura
   Fly(this.game){
+    callout = Callout(this);
    setTargetLocation();
+
   }
 
   void setTargetLocation(){
@@ -30,77 +35,66 @@ class Fly {
 
   }
 
-  void render(Canvas c){
-
-    if(isDead){
-
+  void render(Canvas c) {
+    if (isDead) {
       deadSprite.renderRect(c, flyRect.inflate(2));
-
     } else {
       flyingSprite[flyingSpriteIndex.toInt()].renderRect(c, flyRect.inflate(2));
+      if (game.activeView == View.playing) {
+        callout.render(c);
+      }
     }
-
-
   }
 
-  void update(double t){
-
-    // Checa se é a mosca morreu
-    // Make the fly fall
-    if(isDead){
-
-      // Se morreu, criamos um novo Rect e seta no FlyRect
-      // O valor significa que não vamos mover nem para esquerda nem pra direita
-      // A variavel double T é o TIMEDELTA ele possui o tempo restante desde o ultimo
-      // update foi rodado. Valor em segundos
-
+  void update(double t) {
+    if (isDead) {
+      // make the fly fall
       flyRect = flyRect.translate(0, game.tileSize * 12 * t);
-
-      //Depois de mover a mosca, checa se ela está fora da tela e a remove
-      // Liberar recursos, se ela vai cair eternamente
-
-      if(flyRect.top > game.screenSize.height){
+      if (flyRect.top > game.screenSize.height) {
         isOffScreen = true;
       }
-
     } else {
-
-      // Clap the wings
+      // flap the wings
       flyingSpriteIndex += 30 * t;
 
-      /*
-      Before
-      if (flyingSpriteIndex >= 2) {
-        flyingSpriteIndex -= 2;
-      }
-
-       */
+      //if (flyingSpriteIndex >= 2) {
+      //  flyingSpriteIndex -= 2;
+      //}
 
       while (flyingSpriteIndex >= 2) {
         flyingSpriteIndex -= 2;
       }
 
+      // move the fly
+      double stepDistance = speed * t;
+      Offset toTarget = targetLocation - Offset(flyRect.left, flyRect.top);
+      if (stepDistance < toTarget.distance) {
+        Offset stepToTarget = Offset.fromDirection(toTarget.direction, stepDistance);
+        flyRect = flyRect.shift(stepToTarget);
+      } else {
+        flyRect = flyRect.shift(toTarget);
+        setTargetLocation();
+      }
+
+      // callout
+      callout.update(t);
     }
-
-    // Mover a mosca
-    double stepDistance = speed * t;
-    Offset toTarget = targetLocation - Offset(flyRect.left, flyRect.top);
-
-    if(stepDistance < toTarget.distance){
-
-      Offset stepToTarget = Offset.fromDirection(toTarget.direction, stepDistance);
-      flyRect = flyRect.shift(stepToTarget);
-
-    } else {
-      flyRect = flyRect.shift(toTarget);
-      setTargetLocation();
-    }
-
   }
 
   void onTapDown() {
 
     isDead = true;
+
+    if(game.activeView == View.playing){
+      game.score += 1;
+
+      if(game.score > (game.storage.getInt('highscore') ?? 0)){
+        game.storage.setInt('highscore', game.score);
+        game.highscoreDisplay.updateHighscore();
+      }
+
+    }
+
   }
 
 }

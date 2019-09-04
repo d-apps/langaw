@@ -51,7 +51,6 @@ class FlySpawner {
     int livingFlies = 0;
 
     // Conta o numero de moscas que estão na lista e que estão vivas
-
     game.flies.forEach((Fly fly){
 
       // O código apenas loopa sobre a lista e se a mosca não está morta, adiciona uma
