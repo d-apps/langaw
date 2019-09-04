@@ -1,108 +1,88 @@
-
 import 'dart:math';
 import 'dart:ui';
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/gestures.dart';
-
-import 'package:langaw/components/backyard.dart';
-import 'package:langaw/components/fly.dart';
-import 'package:langaw/components/house-fly.dart';
-
+import 'package:langaw/bgm.dart';
 import 'package:langaw/components/agile-fly.dart';
+import 'package:langaw/components/backyard.dart';
+import 'package:langaw/components/credits-button.dart';
 import 'package:langaw/components/drooler-fly.dart';
+import 'package:langaw/components/fly.dart';
+import 'package:langaw/components/help-button.dart';
+import 'package:langaw/components/highscore-display.dart';
+import 'package:langaw/components/house-fly.dart';
 import 'package:langaw/components/hungry-fly.dart';
 import 'package:langaw/components/macho-fly.dart';
+import 'package:langaw/components/music-button.dart';
 import 'package:langaw/components/score-display.dart';
-
-import 'package:langaw/view.dart';
-import 'package:langaw/views/home-view.dart';
-
+import 'package:langaw/components/sound-button.dart';
 import 'package:langaw/components/start-button.dart';
-import 'package:langaw/views/lost-view.dart';
-
 import 'package:langaw/controllers/spawner.dart';
-
-import 'package:langaw/components/credits-button.dart';
-import 'package:langaw/components/help-button.dart';
-
-import 'package:langaw/views/help-view.dart';
+import 'package:langaw/view.dart';
 import 'package:langaw/views/credits-view.dart';
-
+import 'package:langaw/views/help-view.dart';
+import 'package:langaw/views/home-view.dart';
+import 'package:langaw/views/lost-view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:langaw/components/highscore-display.dart';
 
 class LangawGame extends Game {
-
+  final SharedPreferences storage;
   Size screenSize;
   double tileSize;
-  List<Fly> flies;
   Random rnd;
 
-  Backyard backyard;
+  Backyard background;
+  List<Fly> flies;
+  StartButton startButton;
+  HelpButton helpButton;
+  CreditsButton creditsButton;
+  MusicButton musicButton;
+  SoundButton soundButton;
+  ScoreDisplay scoreDisplay;
+  HighscoreDisplay highscoreDisplay;
+
+  FlySpawner spawner;
 
   View activeView = View.home;
   HomeView homeView;
-  StartButton startButton;
   LostView lostView;
   HelpView helpView;
   CreditsView creditsView;
 
-  FlySpawner spawner;
-
-  HelpButton helpButton;
-  CreditsButton creditsButton;
-
   int score;
-  ScoreDisplay scoreDisplay;
-  final SharedPreferences storage;
-  HighscoreDisplay highscoreDisplay;
 
-  // Necessário criar o inicialiador para receber o tamanho da tela
-  LangawGame(this.storage){
+  LangawGame(this.storage) {
     initialize();
   }
 
-  void initialize()async {
-
-    // Inicializa/ Instancia a lista de moscas que está nula
-    flies = List<Fly>();
-
-    // Inializa o random
+  Future<void> initialize() async {
     rnd = Random();
-
+    flies = List<Fly>();
     score = 0;
+    resize(Size.zero);
 
-    // Aqui o método initialDimensions é um Future<Size> que espera até receber o tamanho.
-    // Após termos o valor ele seta o valor diretamente no objeto screenSize, porém
-    // Porém precisa recalcular o tileSize
-    resize(await Flame.util.initialDimensions());
-
-
-    //Inicializa o background
-    backyard = Backyard(this);
-
-    // Inicializa depois do metodo resize para sabermos o tamanho da tela
-    homeView = HomeView(this);
+    background = Backyard(this);
     startButton = StartButton(this);
-    lostView = LostView(this);
-    spawner = FlySpawner(this);
     helpButton = HelpButton(this);
     creditsButton = CreditsButton(this);
-    helpView = HelpView(this);
-    creditsView = CreditsView(this);
+    musicButton = MusicButton(this);
+    soundButton = SoundButton(this);
     scoreDisplay = ScoreDisplay(this);
     highscoreDisplay = HighscoreDisplay(this);
+
+    spawner = FlySpawner(this);
+    homeView = HomeView(this);
+    lostView = LostView(this);
+    helpView = HelpView(this);
+    creditsView = CreditsView(this);
+
+    BGM.play(BGMType.home);
   }
 
-  void spawnFly(){
-
-    // Gera um numero randomico e multipica pelo valor resultado do valor da
-    // do tamanho da altura/largura menos o tileSize
+  void spawnFly() {
     double x = rnd.nextDouble() * (screenSize.width - (tileSize * 2.025));
-    double y = rnd.nextDouble() * (screenSize.height - (tileSize * 2.025));
-
-    //flies.add(HouseFly(this, x, y));
+    double y = (rnd.nextDouble() * (screenSize.height - (tileSize * 2.025))) + (tileSize * 1.5);
 
     switch (rnd.nextInt(5)) {
       case 0:
@@ -121,69 +101,60 @@ class LangawGame extends Game {
         flies.add(HungryFly(this, x, y));
         break;
     }
-
   }
 
   void render(Canvas canvas) {
+    background.render(canvas);
 
-    // Background
-    /*
-    Rect bgRect = Rect.fromLTWH(0, 0, screenSize.width, screenSize.height);
-    Paint bgPaint = Paint();
-    bgPaint.color = Color(0xff576574);
-    canvas.drawRect(bgRect, bgPaint);
-    */
+    highscoreDisplay.render(canvas);
+    if (activeView == View.playing || activeView == View.lost) scoreDisplay.render(canvas);
 
-    backyard.render(canvas);
+    flies.forEach((Fly fly) => fly.render(canvas));
 
-      highscoreDisplay.render(canvas);
-      if (activeView == View.playing || activeView == View.lost) scoreDisplay.render(canvas);
-
-      flies.forEach((Fly fly) => fly.render(canvas));
-
-      if (activeView == View.home) homeView.render(canvas);
-      if (activeView == View.lost) lostView.render(canvas);
-      if (activeView == View.home || activeView == View.lost) {
-        startButton.render(canvas);
-        helpButton.render(canvas);
-        creditsButton.render(canvas);
-      }
-      if (activeView == View.help) helpView.render(canvas);
-      if (activeView == View.credits) creditsView.render(canvas);
+    if (activeView == View.home) homeView.render(canvas);
+    if (activeView == View.lost) lostView.render(canvas);
+    if (activeView == View.home || activeView == View.lost) {
+      startButton.render(canvas);
+      helpButton.render(canvas);
+      creditsButton.render(canvas);
     }
+    musicButton.render(canvas);
+    soundButton.render(canvas);
+    if (activeView == View.help) helpView.render(canvas);
+    if (activeView == View.credits) creditsView.render(canvas);
+  }
 
   void update(double t) {
-
-    // Controlador que spawna as moscas
     spawner.update(t);
-
-    // Atualiza a mosca
     flies.forEach((Fly fly) => fly.update(t));
-
-    // Remove a mosca que está fora da tela
     flies.removeWhere((Fly fly) => fly.isOffScreen);
-
     if (activeView == View.playing) scoreDisplay.update(t);
-
   }
 
-
-  void resize(Size size){
-
+  void resize(Size size) {
     screenSize = size;
-
-    // Aspect Ratio 16:9
-    //Largura divido por 9, signfica que cabem ate 9 moscas na tela, left to the right
     tileSize = screenSize.width / 9;
 
-    //print("TILESIZE: $tileSize");
+    background?.resize();
 
-    super.resize(size);
+    highscoreDisplay?.resize();
+    scoreDisplay?.resize();
+    flies.forEach((Fly fly) => fly?.resize());
+
+    homeView?.resize();
+    lostView?.resize();
+    helpView?.resize();
+    creditsView?.resize();
+
+    startButton?.resize();
+    helpButton?.resize();
+    creditsButton?.resize();
+    musicButton?.resize();
+    soundButton?.resize();
 
   }
 
-  void onTapDown(TapDownDetails d){
-
+  void onTapDown(TapDownDetails d) {
     bool isHandled = false;
 
     // dialog boxes
@@ -192,6 +163,18 @@ class LangawGame extends Game {
         activeView = View.home;
         isHandled = true;
       }
+    }
+
+    // music button
+    if (!isHandled && musicButton.rect.contains(d.globalPosition)) {
+      musicButton.onTapDown();
+      isHandled = true;
+    }
+
+    // sound button
+    if (!isHandled && soundButton.rect.contains(d.globalPosition)) {
+      soundButton.onTapDown();
+      isHandled = true;
     }
 
     // help button
@@ -222,22 +205,19 @@ class LangawGame extends Game {
     if (!isHandled) {
       bool didHitAFly = false;
       flies.forEach((Fly fly) {
-
-        // Se o flyRect do fly (posição chamada) possui o offset, tocou dentro do
-        // Rect, chama o tap da class
         if (fly.flyRect.contains(d.globalPosition)) {
-
-          // Chama o tap da classe Fly
           fly.onTapDown();
           isHandled = true;
           didHitAFly = true;
         }
       });
-      // Checa se perdeu, se sim muda a active view para status lost
       if (activeView == View.playing && !didHitAFly) {
+        if (soundButton.isEnabled) {
+          Flame.audio.play('sfx/haha' + (rnd.nextInt(5) + 1).toString() + '.ogg');
+        }
+        BGM.play(BGMType.home);
         activeView = View.lost;
       }
     }
   }
-
 }
